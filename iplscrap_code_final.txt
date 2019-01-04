@@ -1,0 +1,61 @@
+﻿import urllib.request
+from bs4 import BeautifulSoup
+import pandas as pd
+
+def scrap(a):
+  pgread=urllib.request.urlopen(a)
+  soup=BeautifulSoup(pgread)
+  print(soup.title.text)
+  table=soup.find('table')
+  rows=table.find_all('tr')
+  heads=table.find_all('th')
+  stats=[]
+  header=[]
+  for tr in rows:
+    td=tr.find_all('td')
+    data=[i.text for i in td]
+    stats.append(data)
+  for hd in heads:
+    header.append(hd.text)
+
+  stats.pop(0)
+  #print(header)
+#################========================Data Frame=====================#########################
+
+  df=pd.DataFrame(stats,columns=header)
+  df[" Avg "]=df[' Avg '].str.replace('-','0')
+
+  df['Consistency']=0.3345*pd.to_numeric(df[' Avg '])+ 0.2566*pd.to_numeric(df[' Inns ']) + 0.1510*pd.to_numeric(df[' SR ']) + 0.0787*pd.to_numeric(df[' 100 ']) +0.0556*pd.to_numeric(df[' 50 ']) 
+
+  df['Form']=0.4262*pd.to_numeric(df[' Avg ']) + 0.2566*pd.to_numeric(df[' Inns ']) + 0.1510*pd.to_numeric(df[' SR ']) + 0.0787*pd.to_numeric(df[' 100 ']) +0.0556*pd.to_numeric(df[' 50 '])
+
+
+  def rat(row):
+    if row['Consistency'] >= 1 and row['Consistency'] <=20:
+      return '1'
+    if row['Consistency']>20 and  row['Consistency']<=40:
+      return '2'
+    if row['Consistency'] >40 and row['Consistency']<= 80 :
+      return '3'
+    if row['Consistency'] >80 and row['Consistency']<=100:
+      return '4'
+    else:
+      return '5'
+  df['Rating_consistency'] = df.apply (lambda row: rat(row),axis=1)
+
+
+  
+
+  return(df)
+
+
+
+###############=======================MAIN=========================#############################
+
+a="https://www.iplt20.com/stats/all-time/most-runs"
+df_all_time=scrap(a)
+
+print(df_all_time.head(100))
+df_all_time.to_csv("ipl_alltime_dataset")
+
+
