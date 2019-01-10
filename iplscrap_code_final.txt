@@ -3,45 +3,68 @@ from bs4 import BeautifulSoup
 import pandas as pd
 
 def scrap(a):
+
   pgread=urllib.request.urlopen(a)
-  soup=BeautifulSoup(pgread)
-  print(soup.title.text)
-  table=soup.find('table')
+  content=BeautifulSoup(pgread)
+  print(content.title.text)
+  table=content.find('table')
   rows=table.find_all('tr')
   heads=table.find_all('th')
-  stats=[]
   header=[]
-  for tr in rows:
-    td=tr.find_all('td')
-    data=[i.text for i in td]
-    stats.append(data)
-  for hd in heads:
-    header.append(hd.text)
+  data=[]
+  for row in rows:
+    td=row.find_all('td')
+    arr=[i.text for i in td]
+    data.append(arr)
 
-  stats.pop(0)
-  #print(header)
-#################========================Data Frame=====================#########################
 
-  df=pd.DataFrame(stats,columns=header)
+  for head in heads:
+    header.append(head.text)
+  data.pop(0)
+
+  df=pd.DataFrame(data,columns=header)
+  df.set_index("POS",inplace=True)
   df[" Avg "]=df[' Avg '].str.replace('-','0')
+  df[' SR ']=df[' SR '].str.replace('-','0')
+  
 
-  df['Consistency']=0.3345*pd.to_numeric(df[' Avg '])+ 0.2566*pd.to_numeric(df[' Inns ']) + 0.1510*pd.to_numeric(df[' SR ']) + 0.0787*pd.to_numeric(df[' 100 ']) +0.0556*pd.to_numeric(df[' 50 ']) 
+  if(' Ov ' in df.columns):
+    df['Bowling_Consistency']=0.4174*pd.to_numeric(df[' Ov '])+ 0.2634*pd.to_numeric(df[' Inns ']) + 0.1602*pd.to_numeric(df[' SR ']) +     0.0975*pd.to_numeric(df[' Avg ']) +0.0615*pd.to_numeric(df[' 4w '])
 
-  df['Form']=0.4262*pd.to_numeric(df[' Avg ']) + 0.2566*pd.to_numeric(df[' Inns ']) + 0.1510*pd.to_numeric(df[' SR ']) + 0.0787*pd.to_numeric(df[' 100 ']) +0.0556*pd.to_numeric(df[' 50 '])
+    df['Bowling_Form']=0.3269*pd.to_numeric(df[' Ov ']) + 0.2846*pd.to_numeric(df[' Inns ']) + 0.1877*pd.to_numeric(df[' SR ']) +           0.1210*pd.to_numeric(df[' Avg ']) +0.0798*pd.to_numeric(df[' 4w '])
 
+    def rat(row):
+      if row['Bowling_Consistency'] >= 1 and row['Bowling_Consistency'] <=20:
+        return '1'
+      if row['Bowling_Consistency']>20 and  row['Bowling_Consistency']<=40:
+        return '2'
+      if row['Bowling_Consistency'] >40 and row['Bowling_Consistency']<= 80 :
+        return '3'
+      if row['Bowling_Consistency'] >80 and row['Bowling_Consistency']<=100:
+        return '4'
+      else:
+        return '5'
+    df['Rating_consistency'] = df.apply (lambda row: rat(row),axis=1)
+    X=np.asarray(df[[' Avg ',' Ov ',' Inns ',' SR ',' 4w ']])
 
-  def rat(row):
-    if row['Consistency'] >= 1 and row['Consistency'] <=20:
-      return '1'
-    if row['Consistency']>20 and  row['Consistency']<=40:
-      return '2'
-    if row['Consistency'] >40 and row['Consistency']<= 80 :
-      return '3'
-    if row['Consistency'] >80 and row['Consistency']<=100:
-      return '4'
-    else:
-      return '5'
-  df['Rating_consistency'] = df.apply (lambda row: rat(row),axis=1)
+  else:
+    df['Batting_consistency']=0.3345*pd.to_numeric(df[' Avg '])+ 0.2566*pd.to_numeric(df[' Inns ']) + 0.1510*pd.to_numeric(df[' SR ']) +     0.0787*pd.to_numeric(df[' 100 ']) +0.0556*pd.to_numeric(df[' 50 ']) 
+
+    df['Batting_Form']=0.4262*pd.to_numeric(df[' Avg ']) + 0.2566*pd.to_numeric(df[' Inns ']) + 0.1510*pd.to_numeric(df[' SR ']) +           0.0787*pd.to_numeric(df[' 100 ']) +0.0556*pd.to_numeric(df[' 50 '])
+
+    def rat(row):
+      if row['Batting_consistency'] >= 1 and row['Batting_consistency'] <=20:
+        return '1'
+      if row['Batting_consistency']>20 and  row['Batting_consistency']<=40:
+        return '2'
+      if row['Batting_consistency'] >40 and row['Batting_consistency']<= 80 :
+        return '3'
+      if row['Batting_consistency'] >80 and row['Batting_consistency']<=100:
+        return '4'
+      else:
+        return '5'
+    df['Rating_consistency'] = df.apply (lambda row: rat(row),axis=1)
+    X=np.asarray(df[[' Avg ',' Runs ',' Inns ',' 100 ',' 50 ']])
 
 
   
