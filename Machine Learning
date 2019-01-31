@@ -1,6 +1,7 @@
 import urllib.request
 from bs4 import BeautifulSoup
 import pandas as pd
+import numpy as np
 
 
 def scrap(a):
@@ -63,16 +64,17 @@ def scrap(a):
                 return '5'
         df['Rating']=df.apply(lambda row: rat(row),axis=1)
         X=np.asarray(df[[' Avg ',' Inns ',' SR ',' 100 ',' 50 ']])
-#########################################============================ML Model====================================##########################################
+##############################============================ML Model==================###################
     
     from sklearn.model_selection import train_test_split
-    import numpy as np
+    #import numpy as np
     
-    X=np.asarray(df[[' Avg ',' Inns ',' SR ',' 100 ',' 50 ']])
+    #X=np.asarray(df[[' Avg ',' Inns ',' SR ',' 100 ',' 50 ']])
     Y=np.asarray(df[['Rating']])
 
     x_train,x_test,y_train,y_test=train_test_split(X,Y,test_size=0.2)
-
+    
+#################========================SVM======================####################
     from sklearn import svm
     sv=svm.SVC(kernel='linear')
     sv.fit(x_train,y_train)
@@ -82,7 +84,7 @@ def scrap(a):
     acc=accuracy_score(y_test,final_y)*100
     print("\n",x_test,"\n",y_test,"\n",final_y,"\nThe Svm Accuracy is=",acc)
 
-################======================Random Forest====================##############################################
+################======================Random Forest====================#################
     from sklearn.ensemble import RandomForestClassifier
     rf=RandomForestClassifier(n_estimators=20)
     rf.fit(x_train,y_train)
@@ -106,4 +108,3 @@ def scrap(a):
 a="https://www.iplt20.com/stats/all-time/most-runs"
 df2018=scrap(a)
 print(df2018)
-#df2018.to_csv('ipl-alltime_data.csv')
