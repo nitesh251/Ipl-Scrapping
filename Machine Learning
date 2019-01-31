@@ -1,0 +1,109 @@
+import urllib.request
+from bs4 import BeautifulSoup
+import pandas as pd
+
+
+def scrap(a):
+    pgread=urllib.request.urlopen(a)
+    soup=BeautifulSoup(pgread,'html.parser')
+    print(soup.title.text)
+    table=soup.find('table')
+    #print(table)
+    rows=table.find_all('tr')
+    head=table.find_all('th')
+    #print(rows)
+
+    stats=[]
+    header=[]
+    for tr in rows:
+        td=tr.find_all('td')
+        row=[i.text for i in td]
+        stats.append(row)
+    for tb in head:
+        header.append(tb.text)
+
+    print(header)
+    stats.pop(0)
+    df=pd.DataFrame(stats,columns=header)
+    df.set_index('POS',inplace=True)
+    df[' Avg ']=df[' Avg '].str.replace('-','0')
+    
+    if(' Ov ' in df.columns):
+        df['Bowler_Consistency']=0.4174*df.to_numeric['Ov'] + 0.2634*df.to_numeric['Inns'] + 0.1602*df.to_numeric['SR'] + 0.0974*df.to_numeric['Avg'] + 0.0615*df.to_numeric['5w']
+        df['Bowler_Form']=0.4174*df.to_numeric['Ov'] + 0.2634*df.to_numeric['Inns'] + 0.1602*df.to_numeric['SR'] + 0.0974*df.to_numeric['Avg'] + 0.0615*df.to_numeric['5w']
+
+        def rat(row):
+            if(row['Bowler_Consistency']>1 and row['Bowler_Consistency']<=20):
+                return '1'
+            elif(row['Bowler_Consistency']>21 and row['Bowler_Consistency']<=50):
+                return '2'
+            elif(row['Bowler_Consistency']>51 and row['Bowler_Consistency']<=70):
+                return '3'
+            elif(row['Bowler_Consistency']>71 and row['Bowler_Consistency']<=90):
+                return '4'
+            else:
+                return '5'
+        df['Rating']=df.apply(lambda row: rat(row),axis=1)
+        X=np.asarray(df[[' Avg ',' Inns ',' SR ',' Ov ',' 5w ']])
+    else:
+        df['Batting_Consistency']= 0.4262*pd.to_numeric(df[' Avg ']) +0.2566*pd.to_numeric(df[' Inns ']) + 0.1510*pd.to_numeric(df[' SR ']) + 0.0787*pd.to_numeric(df[' 100 ']) + 0.0556*pd.to_numeric(df[' 50 '])
+        df['Batting_Form']=0.4262*pd.to_numeric(df[' Avg ']) +0.2566*pd.to_numeric(df[' Inns ']) + 0.1510*pd.to_numeric(df[' SR ']) + 0.0787*pd.to_numeric(df[' 100 ']) + 0.0556*pd.to_numeric(df[' 50 '])
+    
+
+        def rat(row):
+            if(row['Batting_Consistency']>1 and row['Batting_Consistency']<=20):
+                return '1'
+            elif(row['Batting_Consistency']>21 and row['Batting_Consistency']<=50):
+                return '2'
+            elif(row['Batting_Consistency']>51 and row['Batting_Consistency']<=70):
+                return '3'
+            elif(row['Batting_Consistency']>71 and row['Batting_Consistency']<=90):
+                return '4'
+            else:
+                return '5'
+        df['Rating']=df.apply(lambda row: rat(row),axis=1)
+        X=np.asarray(df[[' Avg ',' Inns ',' SR ',' 100 ',' 50 ']])
+#########################################============================ML Model====================================##########################################
+    
+    from sklearn.model_selection import train_test_split
+    import numpy as np
+    
+    X=np.asarray(df[[' Avg ',' Inns ',' SR ',' 100 ',' 50 ']])
+    Y=np.asarray(df[['Rating']])
+
+    x_train,x_test,y_train,y_test=train_test_split(X,Y,test_size=0.2)
+
+    from sklearn import svm
+    sv=svm.SVC(kernel='linear')
+    sv.fit(x_train,y_train)
+    final_y=sv.predict(x_test)
+
+    from sklearn.metrics import accuracy_score
+    acc=accuracy_score(y_test,final_y)*100
+    print("\n",x_test,"\n",y_test,"\n",final_y,"\nThe Svm Accuracy is=",acc)
+
+################======================Random Forest====================##############################################
+    from sklearn.ensemble import RandomForestClassifier
+    rf=RandomForestClassifier(n_estimators=20)
+    rf.fit(x_train,y_train)
+    rf_y=rf.predict(x_test)
+    print("\nThe RF accuracy",accuracy_score(y_test,rf_y)*100)
+
+
+################==================Naive Bayes=========================##################
+
+    from sklearn.naive_bayes import GaussianNB
+    nv=GaussianNB()
+    nv.fit(x_train,y_train)
+    nv_final_y=nv.predict(x_test)
+    print("The nv accuracy is=",accuracy_score(y_test,nv_final_y)*100)
+    
+    return(df)
+
+
+
+
+a="https://www.iplt20.com/stats/all-time/most-runs"
+df2018=scrap(a)
+print(df2018)
+#df2018.to_csv('ipl-alltime_data.csv')
